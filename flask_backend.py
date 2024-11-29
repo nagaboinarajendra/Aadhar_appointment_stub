@@ -1,25 +1,38 @@
 from flask import Flask, request, jsonify
 import sqlite3
+import os
 from datetime import datetime, timedelta
 import random
 
 app = Flask(__name__)
 
-# Create a SQLite database and ensure the table exists
-def create_db():
-    connection = sqlite3.connect("users_appointment.db")
-    cursor = connection.cursor()
-    cursor.execute("""CREATE TABLE IF NOT EXISTS users_appointment (
-                      id INTEGER PRIMARY KEY AUTOINCREMENT,
-                      name TEXT NOT NULL, 
-                      mobile_number INTEGER NOT NULL UNIQUE,
-                      otp INTEGER NOT NULL, 
-                      address TEXT NOT NULL,
-                      aadhar_center TEXT NOT NULL,
-                      appointment_date TEXT NOT NULL
-    )""")
-    connection.commit()
-    connection.close()
+# Set the path for the SQLite database (persistent storage)
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'users_appointment.db')
+
+# Function to initialize the database
+def initialize_database():
+    # Ensure the directory for the DB exists
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    
+    # If the database doesn't exist, create it
+    if not os.path.exists(DB_PATH):
+        with sqlite3.connect(DB_PATH) as connection:
+            cursor = connection.cursor()
+            cursor.execute("""CREATE TABLE IF NOT EXISTS users_appointment (
+                              id INTEGER PRIMARY KEY AUTOINCREMENT,
+                              name TEXT NOT NULL, 
+                              mobile_number INTEGER NOT NULL UNIQUE,
+                              otp INTEGER NOT NULL, 
+                              address TEXT NOT NULL,
+                              aadhar_center TEXT NOT NULL,
+                              appointment_date TEXT NOT NULL
+            )""")
+            connection.commit()
+
+# Before the first request, initialize the database
+@app.before_first_request
+def setup():
+    initialize_database()
 
 # Flask API to book an appointment
 @app.route('/book_appointment', methods=['POST'])
@@ -43,7 +56,7 @@ def book_appointment():
 
     # Check if the mobile number already exists
     try:
-        with sqlite3.connect("users_appointment.db") as connection:
+        with sqlite3.connect(DB_PATH) as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT * FROM users_appointment WHERE mobile_number = ?", (mobile_number,))
             existing_record = cursor.fetchone()
@@ -79,7 +92,7 @@ def appointment_status():
         return jsonify({'error': 'Mobile number must be an integer'}), 400
 
     try:
-        with sqlite3.connect("users_appointment.db") as connection:
+        with sqlite3.connect(DB_PATH) as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT name, appointment_date FROM users_appointment WHERE mobile_number = ?", (mobile_number,))
             record = cursor.fetchone()
@@ -97,5 +110,6 @@ def appointment_status():
         return jsonify({'error': f'Database error: {str(e)}'}), 500
 
 if __name__ == "__main__":
-    create_db()
+    # Initialize the database before running the app
+    initialize_database()
     app.run(port=5001, debug=True)
