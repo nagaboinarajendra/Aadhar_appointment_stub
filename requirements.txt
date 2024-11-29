@@ -1,0 +1,5 @@
+Flask==2.2.5
+requests==2.31.0
+streamlit==1.25.0
+sqlite3==0.0.1
+gunicorn==21.2.0
