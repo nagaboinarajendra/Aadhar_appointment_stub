@@ -3,7 +3,7 @@ import requests
 
 # Function to book an appointment
 def book_appointment_ui(name, mobile_number, otp, address, aadhar_center):
-    url = "http://127.0.0.1:5001/book_appointment"
+    url = "https://aadhar-appointment-stub.onrender.com/book_appointment"
     payload = {
         "name": name,
         "mobile_number": mobile_number,
@@ -26,7 +26,7 @@ def book_appointment_ui(name, mobile_number, otp, address, aadhar_center):
 
 # Function to fetch appointment status
 def fetch_status_ui(mobile_number):
-    url = f"http://127.0.0.1:5001/appointment_status?mobile_number={mobile_number}"
+    url = f"https://aadhar-appointment-stub.onrender.com/appointment_status?mobile_number={mobile_number}"
     try:
         response = requests.get(url)
         print("Response received:", response.text)  # Log the raw response
