@@ -36,7 +36,6 @@ def book_appointment_ui(payload):
     except Exception as e:
         return f"Failed to connect to the server: {e}"
 
-
 # Function to fetch appointment status
 def fetch_status_ui(mobile_number):
     try:
@@ -103,9 +102,6 @@ def main():
                                 index=["Select a city", "Mumbai", "Delhi", "Bangalore", "Kolkata", "Chennai"].index(st.session_state.city))
             st.session_state.city = city  # Update session state with the selected city
 
-            # Debugging: Print selected city value to ensure it's correct
-            st.write(f"Selected City: {st.session_state.city}")
-
             # Fetch Aadhar centers only if city is selected
             if city != "Select a city":
                 aadhar_centers = get_aadhar_centers_ui(city)
@@ -121,19 +117,13 @@ def main():
                 else:
                     payload = {"name": name, "mobile_number": mobile_number, "otp": otp, "address": address, "city": city, "aadhar_center": aadhar_center}
 
-                    # Debugging: Check payload
-                    st.write(f"Payload: {payload}")
-
                     # Make the request to the backend
                     response = book_appointment_ui(payload)
-
-                    # Debugging: Check response
-                    st.write(f"Response: {response}")
 
                     if "successfully" in response:
                         st.session_state.appointment_confirmed = True
                         st.session_state.appointment_message = response
-                        st.rerun()  # Re-run to display confirmation
+                        st.experimental_rerun()  # Re-run to display confirmation
                     else:
                         st.error(response)
 
