@@ -137,4 +137,5 @@ def appointment_status():
 
 if __name__ == "__main__":
     # Initialize the database before running the app
+    initialize_database()
     app.run(port=5004, debug=True)
