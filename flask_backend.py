@@ -6,7 +6,7 @@ import random
 
 app = Flask(__name__)
 
-# Set the path for the SQLite database (persistent storage)
+# Set the path for the SQLite database (persistent storage in Render)
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'users_appointment.db')
 
 # Function to initialize the database
@@ -24,6 +24,7 @@ def initialize_database():
                               mobile_number INTEGER NOT NULL UNIQUE,
                               otp INTEGER NOT NULL, 
                               address TEXT NOT NULL,
+                              city TEXT NOT NULL,
                               aadhar_center TEXT NOT NULL,
                               appointment_date TEXT NOT NULL
             )""")
@@ -34,6 +35,24 @@ def initialize_database():
 def setup():
     initialize_database()
 
+# Predefined cities and Aadhar centers
+CITY_AADHAR_CENTERS = {
+    "Mumbai": ["Andheri", "Borivali", "Dadar"],
+    "Delhi": ["Connaught Place", "Karol Bagh", "Saket"],
+    "Bangalore": ["Whitefield", "Indiranagar", "Koramangala"],
+    "Kolkata": ["Salt Lake", "Park Street", "Howrah"],
+    "Chennai": ["T. Nagar", "Velachery", "Anna Nagar"]
+}
+
+# New endpoint to fetch Aadhar centers based on city
+@app.route('/get_aadhar_centers', methods=['GET'])
+def get_aadhar_centers():
+    city = request.args.get('city')
+    if not city or city not in CITY_AADHAR_CENTERS:
+        return jsonify({'error': 'Invalid or missing city'}), 400
+    
+    return jsonify({'aadhar_centers': CITY_AADHAR_CENTERS[city]}), 200
+
 # Flask API to book an appointment
 @app.route('/book_appointment', methods=['POST'])
 def book_appointment():
@@ -42,11 +61,15 @@ def book_appointment():
     mobile_number = data.get('mobile_number')
     otp = data.get('otp')
     address = data.get('address')
+    city = data.get('city')
     aadhar_center = data.get('aadhar_center')
 
     # Validate input
-    if not all([name, mobile_number, otp, address, aadhar_center]):
+    if not all([name, mobile_number, otp, address, city, aadhar_center]):
         return jsonify({'error': 'All fields are required'}), 400
+
+    if city not in CITY_AADHAR_CENTERS or aadhar_center not in CITY_AADHAR_CENTERS[city]:
+        return jsonify({'error': 'Invalid city or Aadhar center selection'}), 400
 
     try:
         mobile_number = int(mobile_number)
@@ -67,10 +90,10 @@ def book_appointment():
             random_days = random.randint(3, 7)
             appointment_date = (datetime.now() + timedelta(days=random_days)).strftime('%Y-%m-%d')
 
-            # Insert new appointment
+            # Insert new appointment with city
             cursor.execute(
-                "INSERT INTO users_appointment (name, mobile_number, otp, address, aadhar_center, appointment_date) VALUES (?, ?, ?, ?, ?, ?)",
-                (name, mobile_number, otp, address, aadhar_center, appointment_date)
+                "INSERT INTO users_appointment (name, mobile_number, otp, address, city, aadhar_center, appointment_date) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (name, mobile_number, otp, address, city, aadhar_center, appointment_date)
             )
             connection.commit()
 
@@ -94,22 +117,24 @@ def appointment_status():
     try:
         with sqlite3.connect(DB_PATH) as connection:
             cursor = connection.cursor()
-            cursor.execute("SELECT name, appointment_date FROM users_appointment WHERE mobile_number = ?", (mobile_number,))
+            cursor.execute("SELECT name, appointment_date, city, aadhar_center FROM users_appointment WHERE mobile_number = ?", (mobile_number,))
             record = cursor.fetchone()
 
         if record:
-            # Send a structured JSON response
+            # Send a structured JSON response with city and aadhar center
             return jsonify({
                 'status': 'Appointment found',
                 'name': record[0],
-                'appointment_date': record[1]
+                'appointment_date': record[1],
+                'city': record[2],           # Fetching city
+                'aadhar_center': record[3]   # Fetching Aadhar center
             }), 200
         else:
             return jsonify({'status': 'No appointment found for this mobile number'}), 404
     except Exception as e:
         return jsonify({'error': f'Database error: {str(e)}'}), 500
 
+
 if __name__ == "__main__":
     # Initialize the database before running the app
-    initialize_database()
-    app.run(port=5001, debug=True)
+    app.run(port=5004, debug=True)
