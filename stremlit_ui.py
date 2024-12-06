@@ -58,7 +58,7 @@ def initialize_session_state():
     if 'active_button' not in st.session_state:
         st.session_state.active_button = "book"
     default_values = {
-        'name': "", 'mobile_number': "", 'otp': "", 'address': "", 'city': "Select a city", 
+        'name': "", 'mobile_number': "", 'address': "", 'city': "Select a city", 
         'aadhar_center': "Select a center", 'status_number': "", 'appointment_message': "", 'appointment_confirmed': False
     }
     for key, value in default_values.items():
@@ -94,7 +94,6 @@ def main():
             st.subheader("Book your Aadhar Appointment")
             name = st.text_input("Name", value=st.session_state.name)
             mobile_number = st.text_input("Mobile Number", value=st.session_state.mobile_number)
-            otp = st.text_input("OTP", value=st.session_state.otp)
             address = st.text_area("Address", value=st.session_state.address)
 
             # Update the city selection and store it in session state
@@ -112,10 +111,17 @@ def main():
 
             if st.button("Book Appointment Now"):
                 # Check for form validation
-                if not all([name, mobile_number, otp, address, city != "Select a city", aadhar_center != "Select a center"]):
+                if not all([name, mobile_number, address, city != "Select a city", aadhar_center != "Select a center"]):
                     st.error("Please fill all the fields.")
                 else:
-                    payload = {"name": name, "mobile_number": mobile_number, "otp": otp, "address": address, "city": city, "aadhar_center": aadhar_center}
+                    payload = {
+                        "name": name, 
+                        "mobile_number": mobile_number, 
+                        "otp": "123456",  # Hardcoded OTP
+                        "address": address, 
+                        "city": city, 
+                        "aadhar_center": aadhar_center
+                    }
 
                     # Make the request to the backend
                     response = book_appointment_ui(payload)
@@ -126,7 +132,6 @@ def main():
                         st.experimental_rerun()  # Re-run to display confirmation
                     else:
                         st.error(response)
-
 
     # Check Appointment Status form
     elif st.session_state.active_button == "status":
